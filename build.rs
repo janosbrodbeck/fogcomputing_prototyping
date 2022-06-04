@@ -1,4 +1,7 @@
-fn main() -> Result<(), Box<dyn std::error::Error>> {
-    tonic_build::compile_protos("proto/sensor.proto")?;
-    Ok(())
+fn main() {
+    tonic_build::configure()
+        //.build_server(false)
+        .out_dir("src/generated")  // you can change the generated code's location
+        .compile(&["proto/sensor.proto"], &["proto"])
+        .unwrap();
 }
