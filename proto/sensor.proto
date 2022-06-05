@@ -4,7 +4,7 @@ package prototyping;
 
 
 service Sensor {
-  rpc PutEvent (Event) returns (Response);
+  rpc PutEvent (Event) returns (EventResponse);
 }
 
 message Event {
@@ -17,6 +17,6 @@ message Event {
   int64 data_timestamp = 7;
 }
 
-message Response {
+message EventResponse {
   string status = 1;
 }
