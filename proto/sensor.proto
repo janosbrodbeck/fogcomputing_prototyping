@@ -1,0 +1,20 @@
+syntax = "proto3";
+package prototyping;
+
+service Sensor {
+  rpc PutEvent (Event) returns (EventResponse);
+}
+
+message Event {
+  string volcano_name = 1;
+  uint64 sensor_id = 2;
+  uint64 datapoint_id = 3;
+  int64 x = 4;
+  int64 y = 5;
+  int64 z = 6;
+  int64 data_timestamp = 7;
+}
+
+message EventResponse {
+  string status = 1;
+}

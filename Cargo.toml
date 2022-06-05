@@ -1,0 +1,20 @@
+[package]
+name = "prototyping"
+version = "0.1.0"
+edition = "2021"
+
+[[bin]]
+name = "prototyping-server"
+path = "src/server.rs"
+
+[[bin]]
+name = "prototyping-client"
+path = "src/client.rs"
+
+[dependencies]
+tonic = "0.7"
+prost = "0.10"
+tokio = { version = "1", features = ["macros", "rt-multi-thread"] }
+
+[build-dependencies]
+tonic-build = "0.7"
