@@ -12,7 +12,7 @@ pub struct SensorServer {}
 #[tonic::async_trait]
 impl Sensor for SensorServer {
     async fn put_event(&self, request: Request<Event>) -> Result<Response<EventResponse>, Status> {
-        println!("received an event: {:?}", request);
+        println!("received an event: {:?}", request.get_ref().uuid_datapoint);
         let reply = EventResponse {
             status: String::from("OK"),
         };

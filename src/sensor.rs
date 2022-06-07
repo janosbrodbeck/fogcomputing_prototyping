@@ -20,7 +20,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     let response = client.put_event(request).await?;
 
-    println!("RESPONSE={:?}", response);
+    println!("RESPONSE={:?}", response.get_ref().status);
 
     Ok(())
 }
