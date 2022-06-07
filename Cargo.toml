@@ -14,9 +14,6 @@ name = "sensor"
 path = "src/sensor.rs"
 
 [dependencies]
+grpc = { path = "grpc" }
 tonic = "0.7"
-prost = "0.10"
 tokio = { version = "1", features = ["macros", "rt-multi-thread"] }
-
-[build-dependencies]
-tonic-build = "0.7"

@@ -1,4 +1,4 @@
-mod grpc;
+extern crate grpc;
 
 use tonic::{transport::Server, Request, Response, Status};
 

@@ -1,4 +1,4 @@
-mod grpc;
+extern crate grpc;
 
 use grpc::sensor_client::SensorClient as GrpcSensorClient;
 use grpc::Event;
