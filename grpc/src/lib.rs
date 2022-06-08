@@ -98,7 +98,7 @@ pub mod sensor_client {
                     )
                 })?;
             let codec = tonic::codec::ProstCodec::default();
-            let path = http::uri::PathAndQuery::from_static("/lib.Sensor/PutEvent");
+            let path = http::uri::PathAndQuery::from_static("/Sensor/PutEvent");
             self.inner.unary(request.into_request(), path, codec).await
         }
     }
@@ -162,7 +162,7 @@ pub mod sensor_server {
         fn call(&mut self, req: http::Request<B>) -> Self::Future {
             let inner = self.inner.clone();
             match req.uri().path() {
-                "/lib.Sensor/PutEvent" => {
+                "/Sensor/PutEvent" => {
                     #[allow(non_camel_case_types)]
                     struct PutEventSvc<T: Sensor>(pub Arc<T>);
                     impl<T: Sensor> tonic::server::UnaryService<super::Event>
@@ -234,6 +234,6 @@ pub mod sensor_server {
         }
     }
     impl<T: Sensor> tonic::transport::NamedService for SensorServer<T> {
-        const NAME: &'static str = "lib.Sensor";
+        const NAME: &'static str = "Sensor";
     }
 }
