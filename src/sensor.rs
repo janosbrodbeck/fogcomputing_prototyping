@@ -41,7 +41,7 @@ impl Sensor {
         }
     }
 
-    pub async fn run(&mut self) -> Result<(), Box<dyn std::error::Error>> {
+    pub fn emit_event(&self, x: i64, y: i64, z: i64) -> Event {
         let now =  SystemTime::now().duration_since(SystemTime::UNIX_EPOCH).unwrap();
 
         let uuid_bytes = self.uuid.as_bytes();
@@ -49,15 +49,21 @@ impl Sensor {
 
         let uuid_datapoint =  Uuid::new_v1(Timestamp::from_unix(&self.context, now.as_secs(), now.subsec_nanos()),
                                            <&[u8; 6]>::try_from(&uuid_bytes[len-6..]).unwrap());
-        let request = tonic::Request::new(Event {
+
+        Event {
             volcano_name: self.volcano_name.clone(),
             uuid_sensor: self.uuid.as_bytes().to_vec(),
             uuid_datapoint: uuid_datapoint.as_bytes().to_vec(),
-            x: 0,
-            y: 0,
-            z: 0,
+            x,
+            y,
+            z,
             data_timestamp: now.as_secs(),
-        });
+        }
+    }
+
+    pub async fn run(&mut self) -> Result<(), Box<dyn std::error::Error>> {
+
+        let request = tonic::Request::new(self.emit_event(0, 0, 0));
 
         let response = self.client.put_event(request).await?;
 
