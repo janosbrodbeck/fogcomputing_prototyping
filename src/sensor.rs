@@ -25,7 +25,7 @@ async fn run(mut client:  GrpcSensorClient<tonic::transport::Channel>) -> Result
 
     let response = client.put_event(request).await?;
 
-    println!("RESPONSE={:?}", response.get_ref().status);
+    println!("RESPONSE={:?}", response);
 
     Ok(())
 }

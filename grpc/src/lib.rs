@@ -1,4 +1,4 @@
-#[derive(Clone, PartialEq, prost::Message)]
+#[derive(Clone, PartialEq, ::prost::Message, Debug)]
 pub struct Event {
     #[prost(string, tag="1")]
     pub volcano_name: ::prost::alloc::string::String,
@@ -15,10 +15,10 @@ pub struct Event {
     #[prost(int64, tag="7")]
     pub data_timestamp: i64,
 }
-#[derive(Clone, PartialEq, prost::Message)]
+#[derive(Clone, PartialEq, ::prost::Message, Debug)]
 pub struct EventResponse {
     #[prost(string, tag="1")]
-    pub status: prost::alloc::string::String,
+    pub status: ::prost::alloc::string::String,
 }
 /// Generated client implementations.
 pub mod sensor_client {
@@ -98,7 +98,7 @@ pub mod sensor_client {
                     )
                 })?;
             let codec = tonic::codec::ProstCodec::default();
-            let path = http::uri::PathAndQuery::from_static("/Sensor/PutEvent");
+            let path = http::uri::PathAndQuery::from_static("/lib.Sensor/PutEvent");
             self.inner.unary(request.into_request(), path, codec).await
         }
     }
@@ -234,6 +234,6 @@ pub mod sensor_server {
         }
     }
     impl<T: Sensor> tonic::transport::NamedService for SensorServer<T> {
-        const NAME: &'static str = "Sensor";
+        const NAME: &'static str = "lib.Sensor";
     }
 }
