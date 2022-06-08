@@ -7,7 +7,7 @@ use tonic::transport::Channel;
 use uuid::Uuid;
 use uuid::v1::{Context, Timestamp};
 
-struct Sensor {
+pub struct Sensor {
     client: GrpcSensorClient<Channel>,
     volcano_name: String,
     uuid: Uuid,
