@@ -1,4 +1,4 @@
-mod grpc;
+extern crate grpc;
 
 use std::time::SystemTime;
 use grpc::sensor_client::SensorClient as GrpcSensorClient;
