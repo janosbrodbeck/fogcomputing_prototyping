@@ -28,34 +28,6 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     Ok(())
 }
 
-struct UnixTimestamp {
-    nanos: u128,
-    seconds: u64,
-    subsec_nanos: u32,
-}
-
-impl UnixTimestamp {
-    pub fn now() -> Self {
-        Self::new(&SystemTime::now())
-    }
-
-    pub fn new(now: &SystemTime) -> Self {
-        match now.duration_since(SystemTime::UNIX_EPOCH) {
-            Ok(n) => Self {
-                nanos: n.as_nanos(),
-                seconds: n.as_secs(),
-                subsec_nanos: n.subsec_nanos(),
-            },
-            Err(_) => panic!("Not a valid unix time")
-        }
-    }
-
-    pub fn timestamp(&self, context: &Context) -> Timestamp {
-        Timestamp::from_unix(context, self.seconds, self.subsec_nanos)
-    }
-}
-
-
 impl Sensor {
 
     pub fn new(client: GrpcSensorClient<Channel>, volcano_name: String) -> Self {
@@ -70,12 +42,12 @@ impl Sensor {
     }
 
     pub async fn run(&mut self) -> Result<(), Box<dyn std::error::Error>> {
-        let now = UnixTimestamp::now();
+        let now =  SystemTime::now().duration_since(SystemTime::UNIX_EPOCH).unwrap();
 
         let uuid_bytes = self.uuid.as_bytes();
         let len = uuid_bytes.len();
 
-        let uuid_datapoint =  Uuid::new_v1(now.timestamp(&self.context),
+        let uuid_datapoint =  Uuid::new_v1(Timestamp::from_unix(&self.context, now.as_secs(), now.subsec_nanos()),
                                            <&[u8; 6]>::try_from(&uuid_bytes[len-6..]).unwrap());
         let request = tonic::Request::new(Event {
             volcano_name: self.volcano_name.clone(),
@@ -84,7 +56,7 @@ impl Sensor {
             x: 0,
             y: 0,
             z: 0,
-            data_timestamp: now.seconds,
+            data_timestamp: now.as_secs(),
         });
 
         let response = self.client.put_event(request).await?;
