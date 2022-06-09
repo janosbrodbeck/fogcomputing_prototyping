@@ -1,6 +1,6 @@
 extern crate grpc;
 
-use std::time::SystemTime;
+use std::time::{Duration, SystemTime};
 use grpc::sensor_client::SensorClient as GrpcSensorClient;
 use grpc::Event;
 use tonic::transport::Channel;
@@ -26,6 +26,38 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
 
     Ok(())
+}
+
+struct EventRequest {
+    event: Event,
+    timeout: Timeout,
+}
+
+struct Timeout {
+    timeout: Duration,
+}
+
+impl Timeout {
+    const DEFAULT_TIMEOUT_MILLIS: u64 = 100;
+
+    pub fn new() -> Self {
+        Timeout {
+            timeout: Duration::from_millis(Timeout::DEFAULT_TIMEOUT_MILLIS)
+        }
+    }
+
+    pub fn get(&self) -> Duration {
+        self.timeout
+    }
+
+    pub fn increase(&mut self) {
+        self.timeout = self.timeout.saturating_mul(2)
+    }
+
+    pub fn reset(&mut self) {
+        self.timeout = Duration::from_millis(Timeout::DEFAULT_TIMEOUT_MILLIS)
+    }
+
 }
 
 impl Sensor {
