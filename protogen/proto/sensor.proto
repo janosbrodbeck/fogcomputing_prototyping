@@ -15,6 +15,7 @@ message Event {
   int64 y = 5;
   int64 z = 6;
   uint64 data_timestamp = 7;
+  // checksum?
 }
 
 message EventResponse {
