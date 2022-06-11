@@ -1,9 +1,13 @@
 extern crate grpc;
 
+use std::collections::HashMap;
+
 use std::time::{SystemTime};
 use grpc::sensor_client::SensorClient as GrpcSensorClient;
 use grpc::Event;
 use tonic::transport::Channel;
+use tokio::{task};
+use tokio::time::{self, Duration};
 use uuid::Uuid;
 use uuid::v1::{Context, Timestamp};
 
@@ -20,10 +24,23 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     let volcano_name = String::from("Tonic");
 
-    let mut sensor = Sensor::new(client, volcano_name);
 
-    sensor.run().await?;
+    let mut timer = time::interval(Duration::from_secs(1));
+    let mut set = HashMap::new();
+    let mut counter = 0;
 
+
+    while true {
+        let sensor = Sensor::new(client.clone(), volcano_name.clone());
+        set.insert(counter, task::spawn(async move { sensor.run().await }));
+        timer.tick().await;
+        counter += 1;
+    }
+
+    // cleanup tasks
+    for item in set.values() {
+        item.abort();
+    }
 
     Ok(())
 }
@@ -62,15 +79,13 @@ impl Sensor {
         }
     }
 
-    pub async fn run(&mut self) -> Result<(), Box<dyn std::error::Error>> {
+    pub async fn run(self) {
 
         let request = tonic::Request::new(self.emit_event(0, 0, 0));
 
-        let response = self.client.put_event(request).await?;
+        let response = self.client.clone().put_event(request).await;
 
         println!("RESPONSE={:?}", response);
-
-        Ok(())
     }
 
 }
