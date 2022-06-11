@@ -31,7 +31,7 @@ async fn test_emit_event() {
 
 
     let mut sensor = Sensor::new(client, volcano_name);
-    sensor.run().await.unwrap();
+    sensor.run().await;
 
     tx.send(()).unwrap();
     s.await.unwrap();
