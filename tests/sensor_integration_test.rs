@@ -30,8 +30,8 @@ async fn test_emit_event() {
     let volcano_name = String::from("Test-Tonic");
 
 
-    let mut sensor = Sensor::new(client, volcano_name);
-    sensor.run().await;
+    let sensor = Sensor::new(client, volcano_name);
+    sensor.emit_event().await;
 
     tx.send(()).unwrap();
     s.await.unwrap();

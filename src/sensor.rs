@@ -24,10 +24,10 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     let mut timer = time::interval(Duration::from_secs(1));
 
+    let sensor = Sensor::new(client, volcano_name);
     loop {
-        let sensor = Sensor::new(client.clone(), volcano_name.clone());
+        sensor.emit_event().await;
         timer.tick().await;
-        task::spawn(async move { sensor.run().await });
     }
 }
 
@@ -44,7 +44,7 @@ impl Sensor {
         }
     }
 
-    pub fn emit_event(&self, x: i64, y: i64, z: i64) -> Event {
+    pub fn new_event(&self, x: i64, y: i64, z: i64) -> Event {
         let now =  SystemTime::now().duration_since(SystemTime::UNIX_EPOCH).unwrap();
 
         let uuid_bytes = self.uuid.as_bytes();
@@ -64,13 +64,14 @@ impl Sensor {
         }
     }
 
-    pub async fn run(&self) {
+    pub async fn emit_event(&self) {
 
-        let request = tonic::Request::new(self.emit_event(0, 0, 0));
-
-        let response = self.client.clone().put_event(request).await;
-
-        println!("RESPONSE={:?}", response);
+        let request = tonic::Request::new(self.new_event(0, 0, 0));
+        let mut channel = self.client.clone();
+        task::spawn(async move {
+            let response = channel.put_event(request).await;
+            println!("RESPONSE={:?}", response);
+        } );
     }
 
 }
