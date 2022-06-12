@@ -67,14 +67,15 @@ impl Sensor {
         let event = self.new_event(0, 0, 0,);
         let mut channel = self.client.clone();
         task::spawn(async move {
+            // todo wrap timeout logic and vars into own struct
             let mut timeout = Duration::from_millis(100);
             let retries = 5;
 
             for _ in 1..retries {
-                let request = tonic::Request::new(event.clone());
-                // request.set_timeout(timeout); // todo refactor from tokio::time::timeout to request timeout and match response status
-                let pending = time::timeout(timeout, channel.put_event(request)).await;
-                match pending {
+                let mut request = tonic::Request::new(event.clone());
+                request.set_timeout(timeout);
+                let response = channel.put_event(request).await;
+                match response {
                     Err(_) => {
                         timeout = timeout.saturating_mul(2); // todo simple strategy to increase timeout times
                         // todo remember timeouts globally & if too high, maybe stop sending and just write to disk.
