@@ -57,20 +57,37 @@ impl Sensor {
             volcano_name: self.volcano_name.clone(),
             uuid_sensor: self.uuid.as_bytes().to_vec(),
             uuid_datapoint: uuid_datapoint.as_bytes().to_vec(),
-            x,
-            y,
-            z,
+            x, y, z,
             data_timestamp: now.as_secs(),
         }
     }
 
     pub async fn emit_event(&self) {
-
-        let request = tonic::Request::new(self.new_event(0, 0, 0));
+        // todo append event to file (remember line, to seek and write when receiving response)
+        let event = self.new_event(0, 0, 0,);
         let mut channel = self.client.clone();
         task::spawn(async move {
-            let response = channel.put_event(request).await;
-            println!("RESPONSE={:?}", response);
+            let mut timeout = Duration::from_millis(100);
+            let retries = 5;
+
+            for _ in 1..retries {
+                let request = tonic::Request::new(event.clone());
+                // request.set_timeout(timeout); // todo refactor from tokio::time::timeout to request timeout and match response status
+                let pending = time::timeout(timeout, channel.put_event(request)).await;
+                match pending {
+                    Err(_) => {
+                        timeout = timeout.saturating_mul(2); // todo simple strategy to increase timeout times
+                        // todo remember timeouts globally & if too high, maybe stop sending and just write to disk.
+                        // todo ping regularly (but not too often) and on success, restart sending & also start sending unsent logged events
+                        continue
+                    },
+                    Ok(response) => {
+                        println!("RESPONSE={:?}", response);
+                        // todo append ack to file for this event to mark it as received
+                        break
+                    }
+                }
+            }
         } );
     }
 
