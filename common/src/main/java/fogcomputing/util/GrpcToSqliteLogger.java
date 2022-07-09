@@ -91,8 +91,8 @@ public class GrpcToSqliteLogger {
 
             while (results.next()) {
                 var event = Event.newBuilder()
-                    .setUuidDatapoint(ByteString.copyFrom(results.getBlob(1).getBytes(1, 16)))
-                    .setUuidSensor(ByteString.copyFrom(results.getBlob(2).getBytes(1, 16)))
+                    .setUuidDatapoint(ByteString.copyFrom(results.getBytes(1)))
+                    .setUuidSensor(ByteString.copyFrom(results.getBytes(2)))
                     .setVolcanoName(results.getString(3))
                     .setX(results.getLong(4))
                     .setY(results.getLong(5))

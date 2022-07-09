@@ -10,6 +10,7 @@ import io.grpc.ManagedChannelBuilder;
 
 import java.nio.ByteBuffer;
 import java.time.Instant;
+import java.util.List;
 import java.util.UUID;
 
 public class GrpcSensorClient {
@@ -31,6 +32,18 @@ public class GrpcSensorClient {
         channel = ManagedChannelBuilder.forAddress("localhost", 5000).usePlaintext().build();
         client = SensorGrpc.newBlockingStub(channel);
         logger = new GrpcToSqliteLogger("jdbc:sqlite:client.sqlite");
+
+        checkForOldEventsAndResend();
+    }
+
+    void checkForOldEventsAndResend() {
+        List<Event> unreceivedEvents = logger.getUnreceivedEvents();
+        for (Event event : unreceivedEvents) {
+            EventResponse response = client.putEvent(event);
+            if (response.getStatus().equals("OK")) {
+                logger.updateEvent(event);
+            }
+        }
     }
 
     public void sendEvent() {
