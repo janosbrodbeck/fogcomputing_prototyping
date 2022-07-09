@@ -1,0 +1,8 @@
+version: "3.1"
+services:
+  fogcomputing_server:
+    build: .
+    image: ghcr.io/janosbrodbeck/fogcomputing_server:latest
+    container_name: fogcomputing_server
+    ports:
+      - "5000:5000"
