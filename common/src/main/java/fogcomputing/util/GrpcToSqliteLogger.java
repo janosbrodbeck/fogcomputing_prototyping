@@ -9,8 +9,14 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class GrpcToSqliteLogger {
-
     Connection connection;
+
+    private final String sqlCreateTable = """
+                CREATE TABLE IF NOT EXISTS events
+                    (uuid_datapoint blob, uuid_sensor_string blob,
+                    volcano_name text, x int, y int, z int,
+                    data_timestamp timestamp, received_timestamp timestamp)
+                """;
 
     private final String sqlInsertEvent = "INSERT INTO events values(?, ?, ?, ?, ?, ?, ?, ?)";
     //private final PreparedStatement preparedInsertEvent;
@@ -19,7 +25,10 @@ public class GrpcToSqliteLogger {
     //private final PreparedStatement preparedUpdateEvent;
 
     private final String sqlExistsEvent = "SELECT COUNT(*) FROM events WHERE uuid_datapoint = ?";
-    private final String sqlSelectReceivedNullEvents = "SELECT uuid_datapoint, uuid_sensor_string, volcano_name, x, y, z, data_timestamp FROM events WHERE received_timestamp IS NULL";
+    private final String sqlSelectReceivedNullEvents = """
+        SELECT uuid_datapoint, uuid_sensor_string, volcano_name, x, y, z, data_timestamp
+        FROM events WHERE received_timestamp IS NULL
+        """;
 
 
     public GrpcToSqliteLogger() {
@@ -30,16 +39,20 @@ public class GrpcToSqliteLogger {
         try {
             connection = DriverManager.getConnection(connectionString);
             var statement = connection.createStatement();
-            statement.executeUpdate("CREATE TABLE IF NOT EXISTS events (uuid_datapoint blob, uuid_sensor_string blob, volcano_name text, x int, y int, z int, data_timestamp timestamp, received_timestamp timestamp)");
+            statement.executeUpdate(sqlCreateTable);
             statement.close();
         } catch (SQLException e) {
             throw new RuntimeException(e);
         }
     }
 
+    public void log(Event request) {
+        log(request, false);
+    }
+
 
     // todo check if synchronized might be needed here?
-    public /*synchronized*/ void log(Event request) {
+    public /*synchronized*/ void log(Event request, boolean setTimestamp) {
         try {
             var preparedInsertEvent = connection.prepareStatement(sqlInsertEvent);
             preparedInsertEvent.setBytes(1, request.getUuidDatapoint().toByteArray());
@@ -49,7 +62,11 @@ public class GrpcToSqliteLogger {
             preparedInsertEvent.setLong(5, request.getY());
             preparedInsertEvent.setLong(6, request.getZ());
             preparedInsertEvent.setTimestamp(7, Timestamp.from(Instant.ofEpochMilli(request.getDataTimestamp())));
-            preparedInsertEvent.setNull(8, Types.TIMESTAMP);
+            if (setTimestamp) {
+                preparedInsertEvent.setTimestamp(8, Timestamp.from(Instant.now()));
+            } else {
+                preparedInsertEvent.setNull(8, Types.TIMESTAMP);
+            }
 
             preparedInsertEvent.executeUpdate();
         } catch (SQLException e) {
@@ -57,7 +74,7 @@ public class GrpcToSqliteLogger {
         }
     }
 
-    public void updateEvent(Event request) {
+    public void acknowledgeEvent(Event request) {
         try {
             var preparedUpdateEvent = connection.prepareStatement(sqlUpdateEvent);
             preparedUpdateEvent.setTimestamp(1, Timestamp.from(Instant.now()));
@@ -76,6 +93,10 @@ public class GrpcToSqliteLogger {
 
             var results = preparedExistsEvent.executeQuery();
             var count = results.getInt(1);
+            if (count > 1) {
+                System.out.printf("Datapoint %s exists %s times\n", request.getUuidDatapoint(), count);
+            }
+
             return count != 0;
         } catch (SQLException e) {
             throw new RuntimeException(e);

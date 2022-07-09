@@ -1,0 +1,8 @@
+version: "3.1"
+services:
+  fogcomputing_client:
+    build: .
+    image: ghcr.io/janosbrodbeck/fogcomputing_client:latest
+    container_name: fogcomputing_client
+    deploy:
+        replicas: 1

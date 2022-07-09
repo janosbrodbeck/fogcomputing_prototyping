@@ -41,7 +41,7 @@ public class GrpcSensorClient {
         for (Event event : unreceivedEvents) {
             EventResponse response = client.putEvent(event);
             if (response.getStatus().equals("OK")) {
-                logger.updateEvent(event);
+                logger.acknowledgeEvent(event);
             }
         }
     }
@@ -64,7 +64,7 @@ public class GrpcSensorClient {
         EventResponse response = client.putEvent(event);
         System.out.println(response.getStatus());
         if (response.getStatus().equals("OK")) {
-            logger.updateEvent(event);
+            logger.acknowledgeEvent(event);
         }
     }
 

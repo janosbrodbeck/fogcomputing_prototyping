@@ -20,8 +20,7 @@ public class EventHandlerImpl extends SensorGrpc.SensorImplBase {
             System.out.printf("%s,%s,%s%n", request.getX(), request.getY(), request.getZ());
 
             if (!logger.exists(request)) {
-                logger.log(request);
-                logger.updateEvent(request); // update received timestamp
+                logger.log(request, true);
             }
 
             EventResponse response = EventResponse.newBuilder().setStatus("OK").build();
