@@ -28,7 +28,8 @@ gcloud compute firewall-rules create fogcomputing-server-fw-allow-incoming \
   --network=fogcomputing-server-network \
   --source-ranges 0.0.0.0/0
 
+# Move docker install script to remote
 gcloud compute scp install-docker.sh root@fogcomputing-server:~/install-docker.sh
-gcloud compute scp stop-container.sh root@fogcomputing-server:~/stop-container.sh
 
+# Install docker on remote
 gcloud compute ssh root@fogcomputing-server --command="sh ~/install-docker.sh"
