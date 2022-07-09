@@ -3,13 +3,13 @@
 # Assumption: Gcloud sdk is configured, logged in and default region, zone is set
 
 # Create ssh keyfile if not exists
-if [ ! -f "${KEY_FILE:=id_ed25519}" ]; then
-  ssh-keygen -f $KEY_FILE -t ed25519 -C "$(whoami)" -N ""
-  gcloud compute project-info add-metadata \
-    --metadata ssh-keys="$(gcloud compute project-info describe \
-    --format="value(commonInstanceMetadata.items.filter(key:ssh-keys).firstof(value))")
-    $(whoami):$(cat $KEY_FILE.pub)"
-fi
+#if [ ! -f "${KEY_FILE:=id_ed25519}" ]; then
+#  ssh-keygen -f $KEY_FILE -t ed25519 -C "$(whoami)" -N ""
+#  gcloud compute project-info add-metadata \
+#    --metadata ssh-keys="$(gcloud compute project-info describe \
+#    --format="value(commonInstanceMetadata.items.filter(key:ssh-keys).firstof(value))")
+#    $(whoami):$(cat $KEY_FILE.pub)"
+#fi
 
 # Create network
 gcloud compute networks create fogcomputing-server-network
@@ -28,8 +28,7 @@ gcloud compute firewall-rules create fogcomputing-server-fw-allow-incoming \
   --network=fogcomputing-server-network \
   --source-ranges 0.0.0.0/0
 
-# ToDo use ssh keyfile
 gcloud compute scp install-docker.sh root@fogcomputing-server:~/install-docker.sh
+gcloud compute scp stop-container.sh root@fogcomputing-server:~/stop-container.sh
 
-# ToDo use ssh keyfile
 gcloud compute ssh root@fogcomputing-server --command="sh ~/install-docker.sh"
