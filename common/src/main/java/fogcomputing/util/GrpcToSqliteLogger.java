@@ -23,8 +23,12 @@ public class GrpcToSqliteLogger {
 
 
     public GrpcToSqliteLogger() {
+        this("jdbc:sqlite:sample.db");
+    }
+
+    public GrpcToSqliteLogger(String connectionString) {
         try {
-            connection = DriverManager.getConnection("jdbc:sqlite:sample.db");
+            connection = DriverManager.getConnection(connectionString);
             var statement = connection.createStatement();
             statement.executeUpdate("CREATE TABLE IF NOT EXISTS events (uuid_datapoint blob, uuid_sensor_string blob, volcano_name text, x int, y int, z int, data_timestamp timestamp, received_timestamp timestamp)");
             statement.close();

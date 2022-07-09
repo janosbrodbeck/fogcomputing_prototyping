@@ -30,7 +30,7 @@ public class GrpcSensorClient {
 
         channel = ManagedChannelBuilder.forAddress("localhost", 5000).usePlaintext().build();
         client = SensorGrpc.newBlockingStub(channel);
-        logger = new GrpcToSqliteLogger();
+        logger = new GrpcToSqliteLogger("jdbc:sqlite:client.sqlite");
     }
 
     public void sendEvent() {
