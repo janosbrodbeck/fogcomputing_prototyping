@@ -4,6 +4,7 @@ import com.google.protobuf.ByteString;
 import fogcomputing.proto.Event;
 import fogcomputing.proto.EventResponse;
 import fogcomputing.proto.SensorGrpc;
+import fogcomputing.util.GrpcToSqliteLogger;
 import io.grpc.Channel;
 import io.grpc.ManagedChannelBuilder;
 
@@ -16,6 +17,7 @@ public class GrpcSensorClient {
     private final SensorGrpc.SensorBlockingStub client;
     private final byte[] uuidSensorBytes;
     private final UUID uuidSensor;
+    private final GrpcToSqliteLogger logger;
 
     public GrpcSensorClient() {
         {
@@ -28,6 +30,7 @@ public class GrpcSensorClient {
 
         channel = ManagedChannelBuilder.forAddress("localhost", 5000).usePlaintext().build();
         client = SensorGrpc.newBlockingStub(channel);
+        logger = new GrpcToSqliteLogger();
     }
 
     public void sendEvent() {
@@ -38,20 +41,24 @@ public class GrpcSensorClient {
         uuidByteBuffer.putLong(8, uuid.getLeastSignificantBits());
 
         Event event = Event.newBuilder().setUuidSensor(ByteString.copyFrom(uuidSensorBytes))
-                .setUuidDatapoint(ByteString.copyFrom(uuidByteBuffer))
+                .setUuidDatapoint(ByteString.copyFrom(uuidByteBuffer.array()))
                 .setVolcanoName("Example volcano")
                 .setX(1).setY(1).setZ(1)
                 .setDataTimestamp(Instant.now().toEpochMilli())
                 .build();
 
+        logger.log(event);
         EventResponse response = client.putEvent(event);
         System.out.println(response.getStatus());
+        if (response.getStatus().equals("OK")) {
+            logger.updateEvent(event);
+        }
     }
 
 
     public static void main(String[] args) throws InterruptedException {
         GrpcSensorClient sensorClient = new GrpcSensorClient();
-        while(true) {
+        while (true) {
            Thread.sleep(2000);
            sensorClient.sendEvent();
         }
