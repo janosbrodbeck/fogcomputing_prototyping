@@ -1,0 +1,11 @@
+# JetBrains IDEs
+.idea
+*.iml
+
+# maven
+target
+
+# jvm error file
+hs_err_pid*
+
+logs
