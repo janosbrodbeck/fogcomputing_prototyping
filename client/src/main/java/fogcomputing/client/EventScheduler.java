@@ -4,17 +4,19 @@ import fogcomputing.proto.Event;
 import fogcomputing.proto.EventResponse;
 import fogcomputing.util.GrpcToSqliteLogger;
 import fogcomputing.util.Tuple;
-import io.grpc.Grpc;
+import io.grpc.Status;
 
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Random;
+import java.util.Stack;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.concurrent.ThreadPoolExecutor;
 
 public class EventScheduler implements Runnable {
     private final ThreadPoolExecutor threadPool;
-    private final GrpcSensorClient[] clientPool; // todo maybe List of only free clients?
+    private final Stack<GrpcSensorClient> availableClients;
     private final LinkedList<Tuple<GrpcSensorClient, Future<EventResponse>>> transitTracker;
     private final GrpcToSqliteLogger logger;
     private State state;
@@ -23,21 +25,23 @@ public class EventScheduler implements Runnable {
 
     private int currentFailureSlowdownTime;
     private final SchedulerConfiguration configuration;
+    private final Random random;
 
     record SchedulerConfiguration(int threadPoolSize, int requiredIncidentsForFailure, int clientTimeout,
-                                  int normalStateSleepTimeMs,
-                                  int failureStateMinimumSlowdownTimeMs, int failureStateMaximumSlowdownTimeMs,
-                                  int failureStateSlowdownStepMs, int recoveringStateSpeedUpFactor,
+                                  int normalStateSleepTimeMillis,
+                                  int failureStateMinimumSlowdownTimeMillis, int failureStateMaximumSlowdownTimeMillis,
+                                  int failureStateSlowdownStepMillis, int recoveringStateSpeedUpFactor,
                                   String remote) {}
 
     public EventScheduler(SchedulerConfiguration configuration, GrpcToSqliteLogger logger) {
         this.configuration = configuration;
         threadPool = (ThreadPoolExecutor) Executors.newFixedThreadPool(configuration.threadPoolSize);
-        clientPool = new GrpcSensorClient[configuration.threadPoolSize];
+        random = new Random();
 
         // Initialize client pool
-        for (int i=0; i < clientPool.length; i++) {
-            clientPool[i] = new GrpcSensorClient(configuration.clientTimeout, configuration.remote);
+        availableClients = new Stack<>();
+        for (int i=0; i < configuration.threadPoolSize; i++) {
+            availableClients.push(new GrpcSensorClient(configuration.clientTimeout, configuration.remote));
         }
 
         allowedInTransit = configuration.threadPoolSize;
@@ -48,19 +52,23 @@ public class EventScheduler implements Runnable {
         this.logger = logger;
     }
 
-    private void sleepScheduler(long sleep) {
+    private void sleepScheduler(long sleep, boolean withJitter) {
         try {
+            if (withJitter) {
+                // +- 8 % jitter
+                sleep = random.nextLong(Math.round(sleep*0.92), Math.round(sleep*1.08));
+            }
             Thread.sleep(sleep);
-        } catch (InterruptedException ignroed) {}
+
+        } catch (InterruptedException ignored) {}
     }
 
     private GrpcSensorClient findAvailableClient() {
-        for (GrpcSensorClient client : clientPool) {
-            if (!client.isInUse()) {
-                return client;
-            }
+        if (availableClients.empty()) {
+            return null;
         }
-        return null;
+
+        return availableClients.pop();
     }
 
     public Event getNextEvent() {
@@ -97,7 +105,6 @@ public class EventScheduler implements Runnable {
             }
 
             client.setEvent(nextEvent);
-            client.setInUse(true);
             transitTracker.addLast(new Tuple<>(client, threadPool.submit(client)));
         }
     }
@@ -108,18 +115,28 @@ public class EventScheduler implements Runnable {
         for (Tuple<GrpcSensorClient, Future<EventResponse>> transitEvent : transitTracker) {
             if (transitEvent.second().isDone()) {
                 processed.add(transitEvent);
-                transitEvent.first().setInUse(false);
+                availableClients.push(transitEvent.first());
+
                 try {
                     EventResponse response = transitEvent.second().get();
-                    System.out.println(response.getStatus());
                     if (response.getStatus().equals("OK")) {
                         logger.acknowledgeEvent(transitEvent.first().getEvent());
                         incidents = 0;
                     } else {
                         incidents++;
                     }
-                } catch (Exception ignored) {
-                    incidents++;
+
+                } catch (Exception ex) {
+                    Status status = Status.fromThrowable(ex.getCause());
+                    switch (status.getCode()) {
+                        case ALREADY_EXISTS, OK -> logger.acknowledgeEvent(transitEvent.first().getEvent());
+                        case UNKNOWN -> {
+                            incidents++;
+                            System.err.println("Error with future?");
+                            ex.printStackTrace();
+                        }
+                        default -> incidents++;
+                    }
                 }
             }
         }
@@ -128,43 +145,45 @@ public class EventScheduler implements Runnable {
 
     private void stateManagement() {
         switch (state) {
-            case Normal:
+            case Normal -> {
                 if (incidents >= configuration.requiredIncidentsForFailure) {
                     System.out.println("Entering failure state");
                     state = State.Failure;
                     allowedInTransit = 1;
-                    currentFailureSlowdownTime = configuration.failureStateMinimumSlowdownTimeMs;
+                    currentFailureSlowdownTime = configuration.failureStateMinimumSlowdownTimeMillis;
                 } else {
-                    sleepScheduler(configuration.normalStateSleepTimeMs);
+                    sleepScheduler(configuration.normalStateSleepTimeMillis, false);
                 }
-                break;
-            case Recovering:
+            }
+
+            case Recovering -> {
                 if (currentFailureSlowdownTime == 0) {
                     System.out.println("Entering normal state");
                     state = State.Normal;
                 } else {
-                    sleepScheduler(currentFailureSlowdownTime);
-                    currentFailureSlowdownTime -= configuration.failureStateSlowdownStepMs * configuration.recoveringStateSpeedUpFactor;
+                    sleepScheduler(currentFailureSlowdownTime, true);
+                    currentFailureSlowdownTime -= configuration.failureStateSlowdownStepMillis * configuration.recoveringStateSpeedUpFactor;
                     if (currentFailureSlowdownTime < 0) {
                         currentFailureSlowdownTime = 0;
                     }
                 }
-                break;
-            case Failure:
+            }
+
+            case Failure -> {
                 if (incidents == 0) {
                     System.out.println("Entering recovering state");
                     state = State.Recovering;
                     allowedInTransit = configuration.threadPoolSize;
                 } else {
-                    sleepScheduler(currentFailureSlowdownTime);
-                    if (currentFailureSlowdownTime < configuration.failureStateMaximumSlowdownTimeMs) {
-                        currentFailureSlowdownTime += configuration.failureStateSlowdownStepMs;
-                        if (currentFailureSlowdownTime > configuration.failureStateMaximumSlowdownTimeMs) {
-                            currentFailureSlowdownTime = configuration.failureStateMaximumSlowdownTimeMs;
+                    sleepScheduler(currentFailureSlowdownTime, true);
+                    if (currentFailureSlowdownTime < configuration.failureStateMaximumSlowdownTimeMillis) {
+                        currentFailureSlowdownTime += configuration.failureStateSlowdownStepMillis;
+                        if (currentFailureSlowdownTime > configuration.failureStateMaximumSlowdownTimeMillis) {
+                            currentFailureSlowdownTime = configuration.failureStateMaximumSlowdownTimeMillis;
                         }
                     }
                 }
-                break;
+            }
         }
     }
 

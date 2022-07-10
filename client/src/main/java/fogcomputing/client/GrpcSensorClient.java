@@ -17,7 +17,6 @@ public class GrpcSensorClient implements Callable<EventResponse> {
     private final int timeoutMs;
     @Getter @Setter
     private Event event;
-    @Getter @Setter private boolean inUse = false;
 
     public GrpcSensorClient(int timeoutMs, String remoteHost) {
         channel = ManagedChannelBuilder.forAddress(remoteHost, 5000).usePlaintext().build();
