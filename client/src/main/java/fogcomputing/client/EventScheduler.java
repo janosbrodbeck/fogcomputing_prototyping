@@ -48,6 +48,12 @@ public class EventScheduler implements Runnable {
         this.logger = logger;
     }
 
+    private void sleepScheduler(long sleep) {
+        try {
+            Thread.sleep(sleep);
+        } catch (InterruptedException ignroed) {}
+    }
+
     private GrpcSensorClient findAvailableClient() {
         for (GrpcSensorClient client : clientPool) {
             if (!client.isInUse()) {
