@@ -6,6 +6,8 @@ services:
     container_name: fogcomputing_server
     ports:
       - "5000:5000"
+    volumes:
+      - ./fogcomputing_server:/fogcomputing/
   tcgui:
     image: ncareau/tcgui
     cap_add:
