@@ -25,7 +25,6 @@
     <maven.compiler.target>18</maven.compiler.target>
 
     <!-- module versions -->
-    <fred.version>v0.2.4</fred.version>
     <proto.version>3</proto.version>
 
     <!-- dependency versions -->

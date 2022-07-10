@@ -3,8 +3,15 @@ package fogcomputing.server;
 import fogcomputing.proto.Event;
 import fogcomputing.proto.EventResponse;
 import fogcomputing.proto.SensorGrpc;
+import fogcomputing.util.ChecksumUtils;
 import fogcomputing.util.GrpcToSqliteLogger;
+import io.grpc.Status;
+import io.grpc.StatusRuntimeException;
 import io.grpc.stub.StreamObserver;
+
+import java.nio.ByteBuffer;
+import java.util.zip.Adler32;
+import java.util.zip.Checksum;
 
 public class EventHandlerImpl extends SensorGrpc.SensorImplBase {
 
@@ -17,15 +24,23 @@ public class EventHandlerImpl extends SensorGrpc.SensorImplBase {
     @Override
     public void putEvent(Event request, StreamObserver<EventResponse> responseObserver) {
         try {
-            System.out.printf("%s,%s,%s%n", request.getX(), request.getY(), request.getZ());
+            System.out.printf("%s, %s,%s,%s%n", request.getUuidDatapoint(), request.getX(), request.getY(), request.getZ());
+
+            // validate checksum
+            if (request.getChecksum() != ChecksumUtils.checksum(request)) {
+                throw new StatusRuntimeException(Status.DATA_LOSS);
+            }
 
             if (!logger.exists(request)) {
                 logger.log(request, true);
+            } else {
+                throw new StatusRuntimeException(Status.ALREADY_EXISTS);
             }
 
             EventResponse response = EventResponse.newBuilder().setStatus("OK").build();
             responseObserver.onNext(response);
         } catch (Exception e) {
+            e.printStackTrace();
             responseObserver.onError(e);
         } finally {
             responseObserver.onCompleted();

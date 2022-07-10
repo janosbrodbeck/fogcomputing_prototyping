@@ -3,6 +3,9 @@ services:
   fogcomputing_client:
     build: .
     image: ghcr.io/janosbrodbeck/fogcomputing_client:latest
-    container_name: fogcomputing_client
+    #container_name: fogcomputing_client
     deploy:
-        replicas: 1
+        replicas: 5
+    environment:
+        CLIENT_REMOTE_HOST: "34.89.169.211"
+

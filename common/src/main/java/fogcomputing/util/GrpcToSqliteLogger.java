@@ -14,11 +14,11 @@ public class GrpcToSqliteLogger {
     private final String sqlCreateTable = """
                 CREATE TABLE IF NOT EXISTS events
                     (uuid_datapoint blob, uuid_sensor_string blob,
-                    volcano_name text, x int, y int, z int,
-                    data_timestamp timestamp, received_timestamp timestamp)
+                    volcano_name text, x long, y long, z long,
+                    data_timestamp timestamp, received_timestamp timestamp, checksum long)
                 """;
 
-    private final String sqlInsertEvent = "INSERT INTO events values(?, ?, ?, ?, ?, ?, ?, ?)";
+    private final String sqlInsertEvent = "INSERT INTO events values(?, ?, ?, ?, ?, ?, ?, ?, ?)";
     //private final PreparedStatement preparedInsertEvent;
 
     private final String sqlUpdateEvent = "UPDATE events SET received_timestamp = ? WHERE uuid_datapoint = ?";
@@ -26,8 +26,9 @@ public class GrpcToSqliteLogger {
 
     private final String sqlExistsEvent = "SELECT COUNT(*) FROM events WHERE uuid_datapoint = ?";
     private final String sqlSelectReceivedNullEvents = """
-        SELECT uuid_datapoint, uuid_sensor_string, volcano_name, x, y, z, data_timestamp
+        SELECT uuid_datapoint, uuid_sensor_string, volcano_name, x, y, z, data_timestamp, checksum
         FROM events WHERE received_timestamp IS NULL
+        LIMIT ?
         """;
 
 
@@ -67,6 +68,7 @@ public class GrpcToSqliteLogger {
             } else {
                 preparedInsertEvent.setNull(8, Types.TIMESTAMP);
             }
+            preparedInsertEvent.setLong(9, request.getChecksum());
 
             preparedInsertEvent.executeUpdate();
         } catch (SQLException e) {
@@ -103,9 +105,10 @@ public class GrpcToSqliteLogger {
         }
     }
 
-    public List<Event> getUnreceivedEvents() {
+    public List<Event> getUnreceivedEvents(int limit) {
         try {
             var preparedGetUnreceivedEvents = connection.prepareStatement(sqlSelectReceivedNullEvents);
+            preparedGetUnreceivedEvents.setInt(1, limit);
             var results = preparedGetUnreceivedEvents.executeQuery();
 
             var events = new ArrayList<Event>();
@@ -119,6 +122,7 @@ public class GrpcToSqliteLogger {
                     .setY(results.getLong(5))
                     .setZ(results.getLong(6))
                     .setDataTimestamp(results.getTimestamp(7).getTime())
+                    .setChecksum(results.getLong(8))
                     .build();
                 events.add(event);
             }
