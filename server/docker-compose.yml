@@ -10,6 +10,7 @@ services:
       - ./fogcomputing_server:/fogcomputing/
   tcgui:
     image: ncareau/tcgui
+    container_name: traffic-control
     cap_add:
       - NET_ADMIN
     environment:
