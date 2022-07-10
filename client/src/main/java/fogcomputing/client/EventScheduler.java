@@ -105,6 +105,8 @@ public class EventScheduler implements Runnable {
             }
 
             client.setEvent(nextEvent);
+            client.setTimeoutMs((currentFailureSlowdownTime == 0) ?
+                configuration.clientTimeout : Math.round(currentFailureSlowdownTime * 1.2));
             transitTracker.addLast(new Tuple<>(client, threadPool.submit(client)));
         }
     }
