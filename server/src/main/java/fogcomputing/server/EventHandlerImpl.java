@@ -22,7 +22,7 @@ public class EventHandlerImpl extends SensorGrpc.SensorImplBase {
     @Override
     public void putEvent(Event request, StreamObserver<EventResponse> responseObserver) {
         try {
-            System.out.printf("%s, %s,%s,%s%n", bytesToUUID(request.getUuidDatapoint().toByteArray()), request.getX(), request.getY(), request.getZ());
+            System.out.printf("Received event: %s - (%10d,%10d,%10d)%n", bytesToUUID(request.getUuidDatapoint().toByteArray()), request.getX(), request.getY(), request.getZ());
 
             // validate checksum
             if (request.getChecksum() != ChecksumUtils.checksum(request)) {

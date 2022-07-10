@@ -105,7 +105,7 @@ public class EventScheduler implements Runnable {
             client.setEvent(nextEvent);
             client.setTimeoutMs((currentFailureSlowdownTime == 0) ?
                 configuration.clientTimeout : Math.round(currentFailureSlowdownTime * 1.2));
-            System.out.printf("Sending event: %s\n", bytesToUUID(nextEvent.getUuidDatapoint().toByteArray()));
+            System.out.printf("Sending event: %s - (%10d,%10d,%10d)\n", bytesToUUID(nextEvent.getUuidDatapoint().toByteArray()), nextEvent.getX(), nextEvent.getY(), nextEvent.getZ());
             transitTracker.addLast(new Tuple<>(client, threadPool.submit(client)));
         }
     }
