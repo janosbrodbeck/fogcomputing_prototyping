@@ -24,7 +24,7 @@ gcloud compute instances create fogcomputing-server \
 
 # Configure firewall and allow incoming ssh and port 5000
 gcloud compute firewall-rules create fogcomputing-server-fw-allow-incoming \
-  --allow tcp:22,tcp:5000 \
+  --allow tcp:22,tcp:5000,tcp:5555 \
   --network=fogcomputing-server-network \
   --source-ranges 0.0.0.0/0
 
