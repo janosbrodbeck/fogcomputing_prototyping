@@ -9,3 +9,7 @@ target
 hs_err_pid*
 
 logs
+
+# database files
+*.sqlite
+*.db
