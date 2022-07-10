@@ -15,7 +15,7 @@ public class Startup {
             properties.getRemoteHost());
 
         VolcanoSensor volcanoSensor = new VolcanoSensor(
-            200, properties.getVolcanoName(), UUID.nameUUIDFromBytes(properties.getVolcanoName().getBytes()), logger);
+            1000, properties.getVolcanoName(), UUID.nameUUIDFromBytes(properties.getVolcanoName().getBytes()), logger);
         Thread sensorThread = new Thread(volcanoSensor);
 
         EventScheduler scheduler = new EventScheduler(schedulerConfiguration, logger);
