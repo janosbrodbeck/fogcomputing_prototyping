@@ -5,12 +5,11 @@ import fogcomputing.proto.Event;
 import fogcomputing.util.ChecksumUtils;
 import fogcomputing.util.GrpcToSqliteLogger;
 
-import java.nio.ByteBuffer;
 import java.time.Instant;
 import java.util.Random;
 import java.util.UUID;
-import java.util.zip.Adler32;
-import java.util.zip.Checksum;
+
+import static fogcomputing.util.UuidUtils.uuidToBytes;
 
 public class VolcanoSensor implements Runnable {
     private final String volcanoName;
@@ -25,13 +24,6 @@ public class VolcanoSensor implements Runnable {
         this.logger = logger;
         this.frequency = frequency;
         this.random = new Random();
-    }
-
-    private byte[] uuidToBytes(UUID uuid) {
-        var uuidByteBuffer = ByteBuffer.allocate(16);
-        uuidByteBuffer.putLong(uuid.getMostSignificantBits());
-        uuidByteBuffer.putLong(8, uuid.getLeastSignificantBits());
-        return uuidByteBuffer.array();
     }
 
     public Event nextEvent() {

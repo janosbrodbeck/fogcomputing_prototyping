@@ -6,13 +6,12 @@ import fogcomputing.util.GrpcToSqliteLogger;
 import fogcomputing.util.Tuple;
 import io.grpc.Status;
 
-import java.util.LinkedList;
-import java.util.List;
-import java.util.Random;
-import java.util.Stack;
+import java.util.*;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.concurrent.ThreadPoolExecutor;
+
+import static fogcomputing.util.UuidUtils.bytesToUUID;
 
 public class EventScheduler implements Runnable {
     private final ThreadPoolExecutor threadPool;
@@ -106,6 +105,7 @@ public class EventScheduler implements Runnable {
             client.setEvent(nextEvent);
             client.setTimeoutMs((currentFailureSlowdownTime == 0) ?
                 configuration.clientTimeout : Math.round(currentFailureSlowdownTime * 1.2));
+            System.out.printf("Sending event: %s\n", bytesToUUID(nextEvent.getUuidDatapoint().toByteArray()));
             transitTracker.addLast(new Tuple<>(client, threadPool.submit(client)));
         }
     }

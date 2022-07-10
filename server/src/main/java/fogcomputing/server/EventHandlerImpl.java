@@ -9,9 +9,7 @@ import io.grpc.Status;
 import io.grpc.StatusRuntimeException;
 import io.grpc.stub.StreamObserver;
 
-import java.nio.ByteBuffer;
-import java.util.zip.Adler32;
-import java.util.zip.Checksum;
+import static fogcomputing.util.UuidUtils.bytesToUUID;
 
 public class EventHandlerImpl extends SensorGrpc.SensorImplBase {
 
@@ -24,7 +22,7 @@ public class EventHandlerImpl extends SensorGrpc.SensorImplBase {
     @Override
     public void putEvent(Event request, StreamObserver<EventResponse> responseObserver) {
         try {
-            System.out.printf("%s, %s,%s,%s%n", request.getUuidDatapoint(), request.getX(), request.getY(), request.getZ());
+            System.out.printf("%s, %s,%s,%s%n", bytesToUUID(request.getUuidDatapoint().toByteArray()), request.getX(), request.getY(), request.getZ());
 
             // validate checksum
             if (request.getChecksum() != ChecksumUtils.checksum(request)) {
