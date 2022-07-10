@@ -9,7 +9,8 @@ services:
     volumes:
       - ./fogcomputing_server:/fogcomputing/
   tcgui:
-    image: ncareau/tcgui
+    build: tcgui/
+    image: ghcr.io/janosbrodbeck/tcgui
     container_name: traffic-control
     cap_add:
       - NET_ADMIN
