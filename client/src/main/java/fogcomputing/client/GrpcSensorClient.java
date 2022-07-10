@@ -14,19 +14,20 @@ import java.util.concurrent.TimeUnit;
 public class GrpcSensorClient implements Callable<EventResponse> {
     private final Channel channel;
     private final SensorGrpc.SensorBlockingStub client;
+    private final int timeoutMs;
     @Getter @Setter
     private Event event;
     @Getter @Setter private boolean inUse = false;
 
     public GrpcSensorClient(int timeoutMs, String remoteHost) {
         channel = ManagedChannelBuilder.forAddress(remoteHost, 5000).usePlaintext().build();
-        client = SensorGrpc.newBlockingStub(channel)
-            .withDeadlineAfter(timeoutMs, TimeUnit.MILLISECONDS);
+        client = SensorGrpc.newBlockingStub(channel);
+        this.timeoutMs = timeoutMs;
     }
 
     @Override
     public EventResponse call() {
-        return client.putEvent(event);
+        return client.withDeadlineAfter(timeoutMs, TimeUnit.MILLISECONDS).putEvent(event);
     }
 
 }
