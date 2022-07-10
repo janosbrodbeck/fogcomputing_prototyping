@@ -20,9 +20,14 @@ public class EventScheduler implements Runnable {
     private State state;
     private int incidents;
     private int allowedInTransit;
+
+    private int currentFailureSlowdownTime;
     private final SchedulerConfiguration configuration;
 
     record SchedulerConfiguration(int threadPoolSize, int requiredIncidentsForFailure, int clientTimeout,
+                                  int normalStateSleepTimeMs,
+                                  int failureStateMinimumSlowdownTimeMs, int failureStateMaximumSlowdownTimeMs,
+                                  int failureStateSlowdownStepMs, int recoveringStateSpeedUpFactor,
                                   String remote) {}
 
     public EventScheduler(SchedulerConfiguration configuration, GrpcToSqliteLogger logger) {
@@ -39,6 +44,7 @@ public class EventScheduler implements Runnable {
         transitTracker = new LinkedList<>();
         incidents = 0;
         state = State.Normal;
+        this.currentFailureSlowdownTime = 0;
         this.logger = logger;
     }
 
@@ -54,7 +60,6 @@ public class EventScheduler implements Runnable {
     public Event getNextEvent() {
         int toReadFromDb = (allowedInTransit-transitTracker.size()) * 3;
         List<Event> dbEvents = logger.getUnreceivedEvents(toReadFromDb);
-
 
         for (Event dbEvent : dbEvents) {
             boolean notInTransit = true;
@@ -115,17 +120,45 @@ public class EventScheduler implements Runnable {
         transitTracker.removeAll(processed.stream().toList());
     }
 
-    private void handleFailureState() {
-        if (state == State.Failure) {
-            if (incidents == 0) {
-                state = State.Normal;
-                allowedInTransit = configuration.threadPoolSize;
-            }
-        }
-
-        if (state == State.Normal && incidents >= configuration.requiredIncidentsForFailure) {
-            state = State.Failure;
-            allowedInTransit = 1;
+    private void stateManagement() {
+        switch (state) {
+            case Normal:
+                if (incidents >= configuration.requiredIncidentsForFailure) {
+                    System.out.println("Entering failure state");
+                    state = State.Failure;
+                    allowedInTransit = 1;
+                    currentFailureSlowdownTime = configuration.failureStateMinimumSlowdownTimeMs;
+                } else {
+                    sleepScheduler(configuration.normalStateSleepTimeMs);
+                }
+                break;
+            case Recovering:
+                if (currentFailureSlowdownTime == 0) {
+                    System.out.println("Entering normal state");
+                    state = State.Normal;
+                } else {
+                    sleepScheduler(currentFailureSlowdownTime);
+                    currentFailureSlowdownTime -= configuration.failureStateSlowdownStepMs * configuration.recoveringStateSpeedUpFactor;
+                    if (currentFailureSlowdownTime < 0) {
+                        currentFailureSlowdownTime = 0;
+                    }
+                }
+                break;
+            case Failure:
+                if (incidents == 0) {
+                    System.out.println("Entering recovering state");
+                    state = State.Recovering;
+                    allowedInTransit = configuration.threadPoolSize;
+                } else {
+                    sleepScheduler(currentFailureSlowdownTime);
+                    if (currentFailureSlowdownTime < configuration.failureStateMaximumSlowdownTimeMs) {
+                        currentFailureSlowdownTime += configuration.failureStateSlowdownStepMs;
+                        if (currentFailureSlowdownTime > configuration.failureStateMaximumSlowdownTimeMs) {
+                            currentFailureSlowdownTime = configuration.failureStateMaximumSlowdownTimeMs;
+                        }
+                    }
+                }
+                break;
         }
     }
 
@@ -134,13 +167,13 @@ public class EventScheduler implements Runnable {
         while (true) {
             scheduleEvents();
             receiveResponses();
-            handleFailureState();
+            stateManagement();
         }
     }
 
     private enum State {
         Normal,
+        Recovering,
         Failure
     }
 }
-
