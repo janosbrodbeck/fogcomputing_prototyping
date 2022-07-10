@@ -15,10 +15,15 @@ public final class UuidUtils {
     }
 
     public static UUID bytesToUUID(byte[] bytes) {
+        if (bytes.length != 16) {
+            throw new IllegalArgumentException("Expected byte array has to be of length 16!");
+        }
         var mostSignificant = ByteBuffer.allocate(8);
         mostSignificant.put(bytes, 0, 8);
+        mostSignificant.position(0);
         var leastSignificant = ByteBuffer.allocate(8);
         leastSignificant.put(bytes, 8, 8);
+        leastSignificant.position(0);
 
         return new UUID(mostSignificant.getLong(), leastSignificant.getLong());
     }
