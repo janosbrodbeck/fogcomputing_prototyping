@@ -70,7 +70,7 @@ public class SensorGRPCServer {
 
     public static void main(String[] args) throws IOException, InterruptedException {
         final SensorGRPCServer server = new SensorGRPCServer()
-                .addService(new EventHandlerImpl("jdbc:sqlite:server.sqlite"))
+                .addService(new EventHandlerImpl("jdbc:sqlite:/fogcomputing/server.sqlite"))
                 .start();
         server.blockUntilShutdown();
     }
