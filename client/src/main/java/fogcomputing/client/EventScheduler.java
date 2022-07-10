@@ -131,12 +131,10 @@ public class EventScheduler implements Runnable {
                     Status status = Status.fromThrowable(ex.getCause());
                     switch (status.getCode()) {
                         case ALREADY_EXISTS, OK -> logger.acknowledgeEvent(transitEvent.first().getEvent());
-                        case UNKNOWN -> {
+                        default -> {
+                            System.err.println(status.getCode() + " error");
                             incidents++;
-                            System.err.println("Error with future?");
-                            ex.printStackTrace();
                         }
-                        default -> incidents++;
                     }
                 }
             }
@@ -148,7 +146,7 @@ public class EventScheduler implements Runnable {
         switch (state) {
             case Normal -> {
                 if (incidents >= configuration.requiredIncidentsForFailure) {
-                    System.out.println("Entering failure state");
+                    System.out.println("[Failure] Entering state");
                     state = State.Failure;
                     allowedInTransit = 1;
                     currentFailureSlowdownTime = configuration.failureStateMinimumSlowdownTimeMillis;
@@ -159,7 +157,7 @@ public class EventScheduler implements Runnable {
 
             case Recovering -> {
                 if (currentFailureSlowdownTime == 0) {
-                    System.out.println("Entering normal state");
+                    System.out.println("[Normal] Entering state");
                     state = State.Normal;
                 } else {
                     sleepScheduler(currentFailureSlowdownTime, true);
@@ -167,12 +165,13 @@ public class EventScheduler implements Runnable {
                     if (currentFailureSlowdownTime < 0) {
                         currentFailureSlowdownTime = 0;
                     }
+                    System.out.printf("[Recovering] Slowdown time is %s ms\n", currentFailureSlowdownTime);
                 }
             }
 
             case Failure -> {
                 if (incidents == 0) {
-                    System.out.println("Entering recovering state");
+                    System.out.println("[Recovering] Entering state");
                     state = State.Recovering;
                     allowedInTransit = configuration.threadPoolSize;
                 } else {
@@ -183,6 +182,7 @@ public class EventScheduler implements Runnable {
                             currentFailureSlowdownTime = configuration.failureStateMaximumSlowdownTimeMillis;
                         }
                     }
+                    System.out.printf("[Failure] Slowdown time is %s ms\n", currentFailureSlowdownTime);
                 }
             }
         }
