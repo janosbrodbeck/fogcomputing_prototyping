@@ -6,3 +6,10 @@ services:
     container_name: fogcomputing_server
     ports:
       - "5000:5000"
+  tcgui:
+    image: ncareau/tcgui
+    cap_add:
+      - NET_ADMIN
+    environment:
+      TCGUI_PORT: 5555
+    network_mode: host
