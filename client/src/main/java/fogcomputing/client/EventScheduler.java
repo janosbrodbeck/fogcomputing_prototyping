@@ -78,7 +78,6 @@ public class EventScheduler implements Runnable {
         for (Event dbEvent : dbEvents) {
             boolean notInTransit = true;
             for (Tuple<GrpcSensorClient, Future<EventResponse>> inTransit : transitTracker) {
-                // todo maybe use linkedHashMap instead
                 if (inTransit.first().getEvent().getUuidDatapoint().equals(dbEvent.getUuidDatapoint())) {
                     notInTransit = false;
                     break;
