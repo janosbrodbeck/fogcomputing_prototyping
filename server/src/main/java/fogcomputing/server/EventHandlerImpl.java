@@ -39,11 +39,10 @@ public class EventHandlerImpl extends SensorGrpc.SensorImplBase {
 
             EventResponse response = EventResponse.newBuilder().setStatus("OK").build();
             responseObserver.onNext(response);
-        } catch (Exception e) {
-            e.printStackTrace();
-            responseObserver.onError(e);
-        } finally {
             responseObserver.onCompleted();
+        } catch (StatusRuntimeException e) {
+            System.err.printf("%s - %s with checksum %s\n", Status.fromThrowable(e).getCode(), request.getUuidDatapoint(), request.getChecksum());
+            responseObserver.onError(e);
         }
     }
 }
