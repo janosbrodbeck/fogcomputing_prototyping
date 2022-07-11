@@ -2,7 +2,7 @@
 
 Implementation of a client and server application to fulfill fog computing specific challenges.
 
-This prototype is based on the volcano scenario from our last semesters [FogDataBench project](https://git.tu-berlin.de/fogdatabench):
+This prototype is based on the volcano scenario from our last semester's [FogDataBench project](https://git.tu-berlin.de/fogdatabench):
 The prototype's general idea and project structure is adapted from the [FogDataBench sensor](https://git.tu-berlin.de/fogdatabench/sensor).
 (Which was written in Go, compared to this Java implementation and did not focus on reliability).\
 We use [gRPC](https://grpc.io/) for message definition and exchange, [SQLite](https://sqlite.org/index.html) for logging events to disk.
@@ -41,3 +41,16 @@ In the repository root:
 ```shell
 mvn package
 ```
+
+## Message Reliability Promises
+
+- Packet loss, duplication and reordering: handled by TCP
+- Packet corruption: either handled by the underlying protocols, if their invariants are affected
+  - Data corruption: detection handled via an Adler32 checksum (crc alternative)
+- Disconnect or server crash: Clients store events locally to resend in case of errors
+
+### Not covered
+
+- client crash: sensor data generation is part of the client - a crash would result in not generating data
+- Datastore corruption: the database is assumed as source of truth.
+  Failure to write to the client database will lead to loss of new generated data as there is no in-memory fallback.
