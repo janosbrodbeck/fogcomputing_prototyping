@@ -132,7 +132,10 @@ public class EventScheduler implements Runnable {
                     switch (status.getCode()) {
                         case ALREADY_EXISTS, OK -> logger.acknowledgeEvent(transitEvent.first().getEvent());
                         default -> {
-                            System.err.println(status.getCode() + " error");
+                            if (incidents < configuration.requiredIncidentsForFailure && state == State.Normal) {
+                                System.out.printf("[Incident] Error occurred during transmission (%s)\n",
+                                    status.getCode());
+                            }
                             incidents++;
                         }
                     }
@@ -146,6 +149,7 @@ public class EventScheduler implements Runnable {
         switch (state) {
             case Normal -> {
                 if (incidents >= configuration.requiredIncidentsForFailure) {
+                    System.out.println("[Incident] Too many incidents in a row, switching to failure state");
                     System.out.println("[Failure] Entering state");
                     state = State.Failure;
                     allowedInTransit = 1;
@@ -172,6 +176,7 @@ public class EventScheduler implements Runnable {
             case Failure -> {
                 if (incidents == 0) {
                     System.out.println("[Recovering] Entering state");
+                    System.out.println("[Recovering] Received response from server");
                     state = State.Recovering;
                     allowedInTransit = configuration.threadPoolSize;
                 } else {
@@ -190,6 +195,7 @@ public class EventScheduler implements Runnable {
 
     @Override
     public void run() {
+        System.out.println("[Normal] Entering state");
         while (true) {
             scheduleEvents();
             receiveResponses();
