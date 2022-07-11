@@ -62,14 +62,6 @@ public class EventScheduler implements Runnable {
         } catch (InterruptedException ignored) {}
     }
 
-    private GrpcSensorClient findAvailableClient() {
-        if (availableClients.empty()) {
-            return null;
-        }
-
-        return availableClients.pop();
-    }
-
     public Event getNextEvent() {
         int toReadFromDb = (allowedInTransit-transitTracker.size()) * 3;
         List<Event> dbEvents = logger.getUnreceivedEvents(toReadFromDb);
@@ -92,19 +84,20 @@ public class EventScheduler implements Runnable {
 
     private void scheduleEvents() {
         while (transitTracker.size() < allowedInTransit) {
+            if (availableClients.empty()) {
+                return;
+            }
+
             Event nextEvent = getNextEvent();
             if (nextEvent == null) {
                 return;
             }
 
-            GrpcSensorClient client = findAvailableClient();
-            if (client == null) {
-                return;
-            }
-
+            GrpcSensorClient client = availableClients.pop();
             client.setEvent(nextEvent);
             client.setTimeoutMs((currentFailureSlowdownTime == 0) ?
                 configuration.clientTimeout : Math.round(currentFailureSlowdownTime * 1.2));
+
             System.out.printf("Sending: %s: (%11d, %11d, %11d)\n", bytesToUUID(nextEvent.getUuidDatapoint().toByteArray()), nextEvent.getX(), nextEvent.getY(), nextEvent.getZ());
             transitTracker.addLast(new Tuple<>(client, threadPool.submit(client)));
         }
