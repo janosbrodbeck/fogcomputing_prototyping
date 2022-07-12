@@ -13,7 +13,7 @@ The client logs all events to disk to be able to resend them on error. On succes
 Unmarked messages in the database are also recognized and resent on client startup.\
 Advanced state management on the client recognizes faulty behavior and limits sent message sending to not overload the server on reconnection or when the connection stabilizes.
 
-[Link to report](https://github.com/janosbrodbeck/fogcomputing_prototyping/blob/main/Fog_Computing_Prototyping-Report.pdf)  -  [Link to demonstration video (download and use VLC if your brower cannot play it)](https://github.com/janosbrodbeck/fogcomputing_prototyping/blob/main/prototype-demonstration.mp4)
+[Link to report](https://github.com/janosbrodbeck/fogcomputing_prototyping/blob/main/Fog_Computing_Prototyping-Report.pdf)  -  [Link to demonstration video (download and use VLC if your browser cannot play it)](https://github.com/janosbrodbeck/fogcomputing_prototyping/blob/main/prototype-demonstration.mp4)
 
 ## Assignment Requirements
 
