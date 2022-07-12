@@ -30,9 +30,9 @@ Advanced state management on the client recognizes faulty behavior and limits se
   - **server/tcgui:** [git subtree](https://github.com/git/git/blob/30cc8d0f147546d4dd77bf497f4dec51e7265bd8/contrib/subtree/git-subtree.txt) of [tcgui](https://github.com/tum-lkn/tcgui) for visual traffic control ([tc](https://wiki.debian.org/TrafficControl)) configuration
 
 ## Prerequisites
-- Java 18
-- Maven 3.8+
-- Docker 20.10+
+- [Java 18](https://adoptium.net/temurin/releases/?version=18)
+- [Maven 3.8+](https://maven.apache.org/)
+- [Docker 20.10+](https://docs.docker.com/get-docker/)
 
 ## Building
 
