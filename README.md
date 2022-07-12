@@ -54,3 +54,13 @@ mvn package
 - client crash: sensor data generation is part of the client - a crash would result in not generating data
 - Datastore corruption: the database is assumed as source of truth.
   Failure to write to the client database will lead to loss of new generated data as there is no in-memory fallback.
+
+
+---
+
+<details>
+<summary>Notes</summary>
+
+Note the [other branches](https://github.com/janosbrodbeck/fogcomputing_prototyping/branches) for unfinished prototypes in Rust.
+
+</details>
