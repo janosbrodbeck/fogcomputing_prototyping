@@ -54,8 +54,8 @@ public class EventScheduler implements Runnable {
     private void sleepScheduler(long sleep, boolean withJitter) {
         try {
             if (withJitter) {
-                // +- 8 % jitter
-                sleep = random.nextLong(Math.round(sleep*0.92), Math.round(sleep*1.08));
+                // +- 50 % jitter
+                sleep = random.nextLong(Math.round(sleep*0.5), Math.round(sleep*1.5));
             }
             Thread.sleep(sleep);
 

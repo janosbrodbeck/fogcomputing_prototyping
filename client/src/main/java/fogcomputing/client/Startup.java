@@ -11,8 +11,8 @@ public class Startup {
         System.out.println("Client properties: " + properties.toString());
         GrpcToSqliteLogger logger = new GrpcToSqliteLogger("jdbc:sqlite:client.sqlite");
         EventScheduler.SchedulerConfiguration schedulerConfiguration = new EventScheduler.SchedulerConfiguration(
-            16, 3, 3000, 10,200,
-            10000, 250,1,
+            2, 3, 3000, 10,500,
+            15000, 1000, 3, properties.getRemoteHost());
             properties.getRemoteHost());
 
         VolcanoSensor volcanoSensor = new VolcanoSensor(
